@@ -95,6 +95,14 @@ instance canonical_incl_mono {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) :
   mono (canonical_incl σ) := 
 pullback.fst_of_mono.
 
+lemma pb_condition_canonical_inclusion {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) :
+  canonical_incl σ ≫ σ = terminal.from s{ σ }s ≫ truth C :=
+begin
+  convert pullback.condition
+end
+
+abbreviation to_sub {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) : subobject X := subobject.mk (canonical_incl σ)
+
 /- The truth classifies the identity -/
 
 variable (C)

@@ -73,13 +73,22 @@ instance has_or_X_to_Ω : has_sup(X ⟶ Ω C) := { sup :=  λ σ τ, prod.lift �
 instance has_imp_X_to_Ω : has_himp (X ⟶ Ω C) := { himp := λ σ τ, prod.lift σ τ ≫ imp_arrow C}        
 instance has_neg_X_to_Ω : has_hnot (X ⟶ Ω C) := { hnot := λ σ, σ ≫ neg_arrow C}  
 
-/- Now, we define the same structure on the suboject, mathlib already proves it has a lattice structure -/
+/- Now, we define the same structure on the suboject, mathlib already proves it is a lattice -/
 namespace heyting_sub
 
 instance has_top_sub : has_top (subobject X) := { top := subobject.mk (𝟙 X) }
 instance has_himp_sub : has_himp (subobject X) := 
 { himp := λ u v : subobject X, 
           subobject.mk (canonical_incl ((classifier_of u.arrow)⇨(classifier_of v.arrow))) }
+
+-- To prove it has bot, we just need to prove the morphism from initial is mono
+instance initial_mono_class_topos : initial_mono_class C := 
+initial_mono_class.of_is_initial (initial_is_initial) (λ _ , initial_mono _ (initial_is_initial))
+
+
+variable (X)
+lemma top_sub_iso_id : ↑(⊤ : subobject X) ≅ X := subobject.underlying_iso _
+lemma bot_sub_iso_init : ↑(⊥ : subobject X) ≅ ⊥_ C := subobject.underlying_iso _
 
 end heyting_sub
 
@@ -144,8 +153,6 @@ begin
   { rw [←assoc, h], simp },
   { rw [←category_theory.is_iso.hom_inv_id s.snd, cancel_epi s.snd],
    apply is_initial.hom_ext _ _ _ , exact initial_is_initial }
-  -- { intros s m _ _, 
-  --   exact is_initial.hom_ext (is_initial.of_iso (initial_is_initial) (as_iso m).symm) m s.fst }
 end
 
 def pullback_cone_bot_big : pullback_cone (⊥ : X ⟶ Ω C) (truth C) := 
@@ -163,30 +170,52 @@ begin
   { exact (is_pullback_bot_left X) }
 end
 
-/- We show that the internal operators corresponds to the externals one -/
-namespace ext_iso_int
+/- We show that the internal operators corresponds to the external ones -/
+namespace external_iso_internal
 
 lemma top : ↑(⊤ : subobject X) ≅ s{ (⊤ : X ⟶ Ω C) }s :=
 begin
-  let top_sub := (⊤ : subobject X),
-  have h : terminal.from (top_sub : C) ≫ (truth C) = top_sub.arrow ≫ (⊤ : X ⟶ Ω C) :=
-  begin
-  sorry
-  end,
-  -- TODO show that both objects are pullbacks and thus are iso.
-  -- have g := is_pullback_top_big (top_sub : C),
-  -- have h := is_pullback_top_big s{(⊤ : X ⟶ Ω C)}s,
-  -- have XX : (pullback_cone_top_big s{(⊤ : X ⟶ Ω C)}s).X = s{(⊤ : X ⟶ Ω C)}s := sorry,
-  -- have YY : (pullback_cone_top_big (top_sub : C)).X = (top_sub : C) := sorry,
-  -- rw [←XX, ←YY],
-  -- convert @is_limit.cone_point_unique_up_to_iso _ _ _ _ _ _ _ g h,
-  sorry
+  apply iso.trans (heyting_sub.top_sub_iso_id X),
+  apply is_limit.cone_point_unique_up_to_iso (is_pullback_top_big X) (pullback_is_pullback _ _),
 end
 
+lemma bot : ↑(⊥ : subobject X) ≅ s{ (⊥ : X ⟶ Ω C) }s :=
+begin
+  apply iso.trans (heyting_sub.bot_sub_iso_init X),
+  apply is_limit.cone_point_unique_up_to_iso (is_pullback_bot_big X) (pullback_is_pullback _ _)
+end
 
-end ext_iso_int
--- lemma le_top (S : subobject X) : S ≤ (⊤ : subobject X) := 
--- begin
---   apply le_of_inf_eq, apply subobject.eq_of_comm, 
--- end
+-- lemma and (σ τ : X ⟶ Ω C) : ↑( (to_sub σ) ⊓ (to_sub τ) ) ≅ s{ σ ⊓ τ }s := 
+
+end external_iso_internal
+
+variable {X}
+namespace validity
+
+/- Let σ : X ⟶ Ω, a formulat is valid whenever σ factors trought true, 
+   i.e σ = truth_X 
+-/
+
+class is_valid (σ : X ⟶ Ω C) : Prop := 
+{ valid : σ = lift_truth X }
+
+-- Two characterization of validity
+lemma valid_iff_section (σ : X ⟶ Ω C) : is_valid σ ↔ (is_split_epi (canonical_incl σ)) := 
+begin
+  split;  intro h,
+  { apply is_split_epi.mk',
+    exact {section_ := pullback.lift (𝟙 X) (terminal.from X) (by simp [h.valid]) } },
+  { apply is_valid.mk,
+    rw [←id_comp σ, ←h.exists_split_epi.some.id, assoc, 
+        pb_condition_canonical_inclusion, ←assoc, terminal.comp_from] }
+end
+
+lemma valid_iff_iso (σ : X ⟶ Ω C) : is_valid σ ↔ is_iso (canonical_incl σ) :=  
+begin
+  split; rw valid_iff_section; intro h; resetI,
+  { apply is_iso_of_mono_of_is_split_epi (canonical_incl σ) },
+  { apply is_split_epi.of_iso (canonical_incl σ), }
+end
+
+end validity
 
