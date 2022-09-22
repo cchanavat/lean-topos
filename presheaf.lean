@@ -59,6 +59,7 @@ instance (c : Cᵒᵖ) : complete_lattice (Ω.obj c) := by simp; apply_instance
 
  
 def truth : ₸ ⟶ Ω := { app := λ c x, ⊤ }
+@[simp] lemma truth_app (c : Cᵒᵖ) (x : ₸.obj c) : (truth C).app c x = ⊤ := by refl
 
 -- Some basics types in Type u to work with --
 def uUnit : Type u := ulift unit
@@ -121,30 +122,46 @@ end
 /- Now, we show that the terminal presheaf has object the one element type -/
 instance unique_obj (c : Cᵒᵖ) : unique (₸.obj c) := unique_iso (T_iso C) c (terminal.T_unique c)
 
+-- weirdly, this is needed, because we cannot write directly (terminal.from X).app, I don't know why
+abbreviation terminal_from (X : °C) : X ⟶ ⊤_ °C:= terminal.from X
+
+@[simp] lemma terminal_app (X : °C) (c : Cᵒᵖ) (x : X.obj c): ((terminal_from X).app c) x = default := by dec_trivial
+
 end terminal
 
+namespace classifier
 variables {S X : °C} (m : S ⟶ X) [mono m]
-
-instance mono_app (c : Cᵒᵖ) : mono (m.app c) := begin sorry end
-
-lemma injective (c : Cᵒᵖ) : function.injective (m.app c) :=
-begin
-  exact injective_of_mono (m.app c)
-end
 
 /- The classifiyng arrow of m : S ⟶ X is the sieve
   χ_c(x) = {g : d ⟶ c | ∃ y : S(d), m_d(y) = X(g)(x) }
 -/
-def χ (c : Cᵒᵖ) (x : X.obj c) : sieve c.unop := 
+def χ_app (c : Cᵒᵖ) (x : X.obj c) : sieve c.unop := 
 { arrows := λ d f, ∃ (y : S.obj (opposite.op d)), m.app (opposite.op d) y = X.map f.op x, 
   downward_closed' := 
   begin
   intros d e f h g,
   cases h with w hw,
-  rw [op_comp, functor.map_comp'],
-  sorry
+  use S.map (g.op) w,
+  rw [op_comp, functor_to_types.naturality, hw, functor.map_comp'], refl
   end
 }
+
+def χ : X ⟶ Ω := 
+{ app := χ_app m,
+  naturality' := 
+  begin
+    intros c d f,   
+    funext, dsimp,
+    ext1, fsplit;
+    { intro a, cases a, fsplit, exact a_w, rw [op_comp, functor.map_comp'] at *, assumption },
+  end }
+
+lemma pullback_condition : m ≫ χ m = terminal.from S ≫ truth C :=
+begin
+  ext1, funext, simp, 
+end
+
+end classifier
 
 
 end presheaf
@@ -155,3 +172,4 @@ end
 
 
 -- instance topos_hatC : topos °C := topos.mk
+ 
