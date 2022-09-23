@@ -19,14 +19,23 @@ universes v u
 noncomputable theory
 
 
-variables (C : Type u) [category.{u} C] [small_category C]
+variables {C : Type u} [category.{u} C] [small_category C]
 
 local notation `°`:std.prec.max_plus C := Cᵒᵖ ⥤ Type u
 local notation `₸` := ⊤_ (°C)
 
+-- set_option trace.class_instances true
+
+def mono_app_of_mono (S X : Cᵒᵖ ⥤ Type u) (s t : S ⟶ X) (c : Cᵒᵖ) : cone (cospan (s.app c) (t.app c)) := 
+  limit.cone (cospan (s.app c) (t.app c))
+
+def mono_app_of_mono (S X : Cᵒᵖ ⥤ Type u) (m : S ⟶ X) (c : Cᵒᵖ) : cone (cospan (m.app c) (m.app c)) := 
+  limit.cone (cospan (m.app c) (m.app c))
+-- begin 
+--   let F : walking_cospan ⥤ Type u := cospan (m.app c) (m.app c), 
+--   let x : cone F := limit.cone F,
+-- end
 namespace presheaf
-variable {C}
--- (C ⥤ (Type u)ᵒᵖ) 
 
 /-
   Ω in a presheaf topos is defined to be
@@ -59,7 +68,8 @@ instance (c : Cᵒᵖ) : complete_lattice (Ω.obj c) := by simp; apply_instance
 
  
 def truth : ₸ ⟶ Ω := { app := λ c x, ⊤ }
-@[simp] lemma truth_app (c : Cᵒᵖ) (x : ₸.obj c) : (truth C).app c x = ⊤ := by refl
+
+@[simp] lemma truth_app (c : Cᵒᵖ) (x : ₸.obj c) : truth.app c x = ⊤ := by refl
 
 -- Some basics types in Type u to work with --
 def uUnit : Type u := ulift unit
@@ -120,7 +130,7 @@ begin
 end
 
 /- Now, we show that the terminal presheaf has object the one element type -/
-instance unique_obj (c : Cᵒᵖ) : unique (₸.obj c) := unique_iso (T_iso C) c (terminal.T_unique c)
+instance unique_obj (c : Cᵒᵖ) : unique (₸.obj c) := unique_iso T_iso c (terminal.T_unique c)
 
 -- weirdly, this is needed, because we cannot write directly (terminal.from X).app, I don't know why
 abbreviation terminal_from (X : °C) : X ⟶ ⊤_ °C:= terminal.from X
@@ -128,6 +138,92 @@ abbreviation terminal_from (X : °C) : X ⟶ ⊤_ °C:= terminal.from X
 @[simp] lemma terminal_app (X : °C) (c : Cᵒᵖ) (x : X.obj c): ((terminal_from X).app c) x = default := by dec_trivial
 
 end terminal
+
+namespace pullback
+/-
+  Here we show that pullbacks are computed pointwise in °C, so we have 
+  a cartesian square of natural transformation iff for each c : Cᵒᵖ the 
+  "applied" square is a pullback. 
+  As a consequence a natural transormation is mono iff each component are mono
+
+  Notation :
+  W --v--> Y
+  |        |
+  u        t
+  |        |
+  X --s--> Z
+-/
+
+variables {X Y Z : °C} (s : X ⟶ Z) (t : Y ⟶ Z)
+
+-- def applied_square (w : pullback_cone s t) (c : Cᵒᵖ) : pullback_cone (s.app c) (t.app c) := 
+-- pullback_cone.mk (w.fst.app c) (w.snd.app c) 
+--   (by rw [←nat_trans.vcomp_app, ←nat_trans.vcomp_app,nat_trans.vcomp_eq_comp, 
+--           nat_trans.vcomp_eq_comp, w.condition])
+
+lemma cospan_flip (c : Cᵒᵖ) : (cospan s t).flip.obj c = cospan (s.app c) (t.app c) :=
+begin
+  apply category_theory.functor.ext,
+  swap,
+  { intro x, cases x,
+    { refl },
+    { cases x; refl, } },
+  { intros x y f, cases f,
+    { dsimp, simp }, --erw (functor.flip_obj_obj (cospan s t) c x) },
+    { cases f_1; refl } }
+end
+
+lemma pullback_flip (c : Cᵒᵖ) : limit ((cospan s t).flip.obj c) = pullback (s.app c) (t.app c) :=
+by rw cospan_flip
+
+lemma iso_app (c : Cᵒᵖ) : (pullback s t).obj c ≅ pullback (s.app c) (t.app c) := 
+begin
+  rw ←pullback_flip,
+  dunfold pullback,
+  change limit ((cospan s t).flip.obj c) with lim.obj ((cospan s t).flip.obj c),
+  rw ←functor.comp_obj, simp,
+  exact (limit_iso_flip_comp_lim (cospan s t)).app c,
+end
+
+abbreviation pullback_fst_app (c : Cᵒᵖ) : (pullback s t).obj c ⟶ X.obj c := (pullback.fst : pullback s t ⟶ X).app c
+abbreviation pullback_snd_app (c : Cᵒᵖ) : (pullback s t).obj c ⟶ Y.obj c := (pullback.snd : pullback s t ⟶ Y).app c
+
+lemma iso_app_map_fst (c : Cᵒᵖ) : 
+  (pullback.fst : pullback s t ⟶ X).app c = (iso_app s t c).hom ≫ pullback.fst :=
+begin
+  -- have app_condition : pullback_fst_app s t c ≫ s.app c = pullback_snd_app s t c ≫ t.app c :=
+  -- by rw [←nat_trans.vcomp_app, ←nat_trans.vcomp_app, nat_trans.vcomp_eq_comp, pullback.condition]; refl,
+  -- suffices h : (iso_app s t c).hom = pullback.lift (pullback_fst_app s t c) (pullback_snd_app s t c) app_condition,
+  -- { rw [h, pullback.lift_fst] },
+  -- { }
+  sorry
+end
+
+lemma iso_app_of_is_limit (c : Cᵒᵖ) (w : pullback_cone s t) (hw : is_limit w) 
+  (wc : pullback_cone (s.app c) (t.app c)) (hwc : is_limit wc) : w.X.obj c ≅ wc.X :=
+begin
+  apply iso.trans ((is_limit.cone_point_unique_up_to_iso hw (limit.is_limit _)).app c),
+  apply iso.trans _ (is_limit.cone_point_unique_up_to_iso hwc (limit.is_limit _)).symm,
+  exact iso_app s t c,
+end
+
+end pullback
+
+lemma mono_app_of_mono {S X : °C} (m : S ⟶ X) [mono m] (c : Cᵒᵖ) : mono (m.app c) :=
+begin 
+  let F : walking_cospan ⥤ Type u := cospan (m.app c) (m.app c), 
+  let x := limit.cone F,
+  apply pullback_cone.mono_of_is_limit_mk_id_id,
+  
+  have g :=  pullback_cone.is_limit_mk_id_id m,
+  have h := pullback.iso_app m m c,
+
+
+  apply is_limit.of_iso_limit,
+  
+  exact (),
+
+end
 
 namespace classifier
 variables {S X : °C} (m : S ⟶ X) [mono m]
@@ -156,9 +252,21 @@ def χ : X ⟶ Ω :=
     { intro a, cases a, fsplit, exact a_w, rw [op_comp, functor.map_comp'] at *, assumption },
   end }
 
-lemma pullback_condition : m ≫ χ m = terminal.from S ≫ truth C :=
+lemma pullback_condition : m ≫ χ m = terminal.from S ≫ truth :=
 begin
-  ext1, funext, simp, 
+  ext1, funext c x, simp, apply sieve.ext,
+  intros d f, simp, 
+  use S.map f.op x, 
+  rw functor_to_types.naturality, dsimp, refl
+end
+
+def pb_cone : pullback_cone (χ m) truth := pullback_cone.mk m (terminal.from S) (pullback_condition m)
+
+def pb_lift (u : pullback_cone (χ m) truth) : u.X ⟶ S := sorry
+lemma is_limit_pb_cone : is_limit (pb_cone m) := 
+begin
+sorry -- apply pullback_cone.is_limit.mk
+
 end
 
 end classifier
