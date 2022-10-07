@@ -1,3 +1,4 @@
+import tactic.congrm
 import category_theory.limits.shapes.finite_limits
 import category_theory.closed.cartesian
 import category_theory.closed.types
@@ -24,17 +25,6 @@ variables {C : Type u} [category.{u} C] [small_category C]
 local notation `°`:std.prec.max_plus C := Cᵒᵖ ⥤ Type u
 local notation `₸` := ⊤_ (°C)
 
--- set_option trace.class_instances true
-
-def mono_app_of_mono (S X : Cᵒᵖ ⥤ Type u) (s t : S ⟶ X) (c : Cᵒᵖ) : cone (cospan (s.app c) (t.app c)) := 
-  limit.cone (cospan (s.app c) (t.app c))
-
-def mono_app_of_mono (S X : Cᵒᵖ ⥤ Type u) (m : S ⟶ X) (c : Cᵒᵖ) : cone (cospan (m.app c) (m.app c)) := 
-  limit.cone (cospan (m.app c) (m.app c))
--- begin 
---   let F : walking_cospan ⥤ Type u := cospan (m.app c) (m.app c), 
---   let x : cone F := limit.cone F,
--- end
 namespace presheaf
 
 /-
@@ -83,7 +73,7 @@ match b.down with
 end
 
 namespace terminal
-/- Let us prove that the terminal object in Type u is iso the one element type -/
+/- Let us prove that the terminimport tactic.simp_rwal object in Type u is iso the one element type -/
 
 lemma type_uniq (b a : ⊤_ (Type u)) : a = b := 
 begin
@@ -152,14 +142,11 @@ namespace pullback
   u        t
   |        |
   X --s--> Z
+  We show that we have an isomorphism of pullback cones, between the applied pullback cone in c
+  and the canonical pullback cone from s_c and t_c. 
 -/
 
-variables {X Y Z : °C} (s : X ⟶ Z) (t : Y ⟶ Z)
-
--- def applied_square (w : pullback_cone s t) (c : Cᵒᵖ) : pullback_cone (s.app c) (t.app c) := 
--- pullback_cone.mk (w.fst.app c) (w.snd.app c) 
---   (by rw [←nat_trans.vcomp_app, ←nat_trans.vcomp_app,nat_trans.vcomp_eq_comp, 
---           nat_trans.vcomp_eq_comp, w.condition])
+variables {X Y Z : °C} (s : X ⟶ Z) (t : Y ⟶ Z) (c : Cᵒᵖ)
 
 lemma cospan_flip (c : Cᵒᵖ) : (cospan s t).flip.obj c = cospan (s.app c) (t.app c) :=
 begin
@@ -173,10 +160,14 @@ begin
     { cases f_1; refl } }
 end
 
-lemma pullback_flip (c : Cᵒᵖ) : limit ((cospan s t).flip.obj c) = pullback (s.app c) (t.app c) :=
+lemma pullback_flip : limit ((cospan s t).flip.obj c) = pullback (s.app c) (t.app c) :=
 by rw cospan_flip
 
-lemma iso_app (c : Cᵒᵖ) : (pullback s t).obj c ≅ pullback (s.app c) (t.app c) := 
+lemma pullback_flip' : limit ((cospan s t).flip.obj c) = limit (cospan (s.app c) (t.app c)) :=
+by rw cospan_flip
+
+-- If W is the pullback of s and t, then W(c) is iso to the pullback of s_c and t_c
+lemma iso_app_X : (pullback s t).obj c ≅ pullback (s.app c) (t.app c) := 
 begin
   rw ←pullback_flip,
   dunfold pullback,
@@ -185,44 +176,207 @@ begin
   exact (limit_iso_flip_comp_lim (cospan s t)).app c,
 end
 
-abbreviation pullback_fst_app (c : Cᵒᵖ) : (pullback s t).obj c ⟶ X.obj c := (pullback.fst : pullback s t ⟶ X).app c
-abbreviation pullback_snd_app (c : Cᵒᵖ) : (pullback s t).obj c ⟶ Y.obj c := (pullback.snd : pullback s t ⟶ Y).app c
-
-lemma iso_app_map_fst (c : Cᵒᵖ) : 
-  (pullback.fst : pullback s t ⟶ X).app c = (iso_app s t c).hom ≫ pullback.fst :=
-begin
-  -- have app_condition : pullback_fst_app s t c ≫ s.app c = pullback_snd_app s t c ≫ t.app c :=
-  -- by rw [←nat_trans.vcomp_app, ←nat_trans.vcomp_app, nat_trans.vcomp_eq_comp, pullback.condition]; refl,
-  -- suffices h : (iso_app s t c).hom = pullback.lift (pullback_fst_app s t c) (pullback_snd_app s t c) app_condition,
-  -- { rw [h, pullback.lift_fst] },
-  -- { }
-  sorry
-end
-
 lemma iso_app_of_is_limit (c : Cᵒᵖ) (w : pullback_cone s t) (hw : is_limit w) 
   (wc : pullback_cone (s.app c) (t.app c)) (hwc : is_limit wc) : w.X.obj c ≅ wc.X :=
 begin
   apply iso.trans ((is_limit.cone_point_unique_up_to_iso hw (limit.is_limit _)).app c),
   apply iso.trans _ (is_limit.cone_point_unique_up_to_iso hwc (limit.is_limit _)).symm,
-  exact iso_app s t c,
+  exact iso_app_X s t c,
+end
+
+/-
+  We constuct an explicit cone isomorphim between the pullback cone of s_c and t_c
+  and the (pullback cone of s and t)_c  
+-/
+
+abbreviation pullback_fst_app : (pullback s t).obj c ⟶ X.obj c := 
+(pullback.fst : pullback s t ⟶ X).app c
+abbreviation pullback_snd_app : (pullback s t).obj c ⟶ Y.obj c := 
+(pullback.snd : pullback s t ⟶ Y).app c
+
+lemma iso_app_comm : 
+  pullback_fst_app s t c ≫ s.app c = pullback_snd_app s t c ≫ t.app c :=
+begin 
+  rw [←nat_trans.vcomp_app, ←nat_trans.vcomp_app, nat_trans.vcomp_eq_comp, pullback.condition], 
+  refl
+end
+
+def app_cone : pullback_cone (s.app c) (t.app c) := 
+  pullback_cone.mk (pullback_fst_app s t c) (pullback_snd_app s t c) (iso_app_comm s t c)
+
+@[simp] lemma eval_obj_eq_simp (x : walking_cospan) : 
+  (cospan (s.app c) (t.app c)).obj x = (cospan s t ⋙ (evaluation Cᵒᵖ (Type u)).obj c).obj x :=
+begin
+  cases x; simp, cases x; simp,
+end
+
+@[simp] lemma eval_obj_eq_simp' (x : walking_cospan) : 
+  (cospan (s.app c) (t.app c)).obj x = ((cospan s t).obj x).obj c := by simp
+
+@[simp] lemma eval_map_eq_simp (x y : walking_cospan) (f : x ⟶ y) :
+  (cospan (s.app c) (t.app c)).map f = 
+  (eq_to_hom (eval_obj_eq_simp' _ _ _ x)) ≫ ((cospan s t).map f).app c ≫ 
+    (eq_to_hom (eval_obj_eq_simp' _ _ _ y).symm) :=
+begin
+  cases f, cases x, refl, cases x; refl,
+  cases f_1; refl,
+end
+
+@[simp] lemma cospan_evaluation : 
+  cospan s t ⋙ (evaluation Cᵒᵖ (Type u)).obj c = cospan (s.app c) (t.app c) :=
+begin
+  symmetry,
+  apply category_theory.functor.ext,
+  swap,
+  { simp, },
+  { intros x y f, rw eval_map_eq_simp, refl }
+end
+
+
+lemma coerce_pullback_limit_evaluation : 
+  limit (cospan s t ⋙ (evaluation Cᵒᵖ (Type u)).obj c) = pullback (s.app c) (t.app c) :=
+by simp only [cospan_evaluation]
+
+-- The cone isomorphism we use to show pullback are computed pointwise 
+def iso_app_cone_X := (limit_obj_iso_limit_comp_evaluation (cospan s t) c) ≪≫
+                eq_to_iso (coerce_pullback_limit_evaluation s t c)
+
+lemma iso_fst_comm : pullback_fst_app s t c = 
+  (iso_app_cone_X s t c).hom ≫ (pullback.fst : pullback (s.app c) (t.app c) ⟶ X.obj c) :=
+begin
+  unfold iso_app_cone_X, simp,
+  dunfold pullback_fst_app, symmetry,
+  convert limit_obj_iso_limit_comp_evaluation_hom_π (cospan s t) walking_cospan.left c, 
+  dunfold pullback.fst, 
+  rw ←id_comp (limit.π (cospan s t ⋙ (evaluation Cᵒᵖ (Type u)).obj c) walking_cospan.left),
+  rw ←eq_to_hom_refl,
+  congr; simp, refl
+end
+
+lemma iso_snd_comm : pullback_snd_app s t c = 
+  (iso_app_cone_X s t c).hom ≫ (pullback.snd : pullback (s.app c) (t.app c) ⟶ Y.obj c) :=
+begin
+  unfold iso_app_cone_X, simp,
+  dunfold pullback_snd_app, symmetry,
+  convert limit_obj_iso_limit_comp_evaluation_hom_π (cospan s t) walking_cospan.right c, 
+  dunfold pullback.snd, 
+  rw ←id_comp (limit.π (cospan s t ⋙ (evaluation Cᵒᵖ (Type u)).obj c) walking_cospan.right),
+  rw ←eq_to_hom_refl,
+  congr; simp, refl
+end
+
+@[simp] lemma app_cone_X : (app_cone s t c).X = (limit (cospan s t)).obj c  := by refl
+@[simp] lemma pulback_cone_X : 
+  (limit.cone (cospan (s.app c) (t.app c))).X = pullback (s.app c) (t.app c) := by refl
+
+def iso_app_cone_X' : (app_cone s t c).X ≅ (limit.cone (cospan (s.app c) (t.app c))).X :=
+begin
+simp, exact iso_app_cone_X s t c
+end
+
+-- This is the isomorphism
+def iso_app_cone : app_cone s t c ≅ limit.cone (cospan (s.app c) (t.app c)) :=
+begin
+  unfold app_cone,
+  apply pullback_cone.ext (iso_app_cone_X' s t c) (iso_fst_comm s t c) (iso_snd_comm s t c),
+end
+
+lemma app_cone_is_limit : is_limit (app_cone s t c) := 
+is_limit.of_iso_limit (limit_cone.is_limit _) (iso_app_cone s t c).symm
+
+-- More generally, we can get an iso of cone from a any limit cone
+lemma iso_app_cone_of_is_limit (wc : pullback_cone (s.app c) (t.app c)) (hwc : is_limit wc) : 
+  app_cone s t c ≅ wc := 
+begin
+exact is_limit.unique_up_to_iso (app_cone_is_limit s t c) hwc
+end
+
+lemma app_cone_of_cone_comm {s : X ⟶ Z} {t : Y ⟶ Z} (w : pullback_cone s t) (c : Cᵒᵖ) :
+  w.fst.app c ≫ s.app c = w.snd.app c ≫ t.app c := 
+begin
+  rw [←nat_trans.vcomp_app, ←nat_trans.vcomp_app, nat_trans.vcomp_eq_comp, 
+      pullback_cone.condition w],
+  refl
+end
+
+variables {s t}
+def app_cone_of_cone (w : pullback_cone s t) (c : Cᵒᵖ) := 
+  pullback_cone.mk (w.fst.app c) (w.snd.app c) (app_cone_of_cone_comm w c)
+
+@[simp] lemma app_cone_cano : 
+  app_cone_of_cone (pullback_cone.mk pullback.fst pullback.snd pullback.condition) c = app_cone s t c := by refl
+
+def app_cone_iso_of_iso_cone_X (w w' : pullback_cone s t) (c : Cᵒᵖ) (i : w ≅ w') :
+  (app_cone_of_cone w c).X ≅ (app_cone_of_cone w' c).X :=
+{ hom := i.hom.hom.app c, 
+  inv := i.inv.hom.app c,
+  hom_inv_id' := 
+  begin
+   rw ←nat_trans.vcomp_app, rw nat_trans.vcomp_eq_comp, 
+   change i.hom.hom ≫ i.inv.hom with (i.hom ≫ i.inv).hom,
+   simp, refl,
+  end,
+  inv_hom_id' := 
+  begin
+   rw ←nat_trans.vcomp_app, rw nat_trans.vcomp_eq_comp, 
+   change i.inv.hom ≫ i.hom.hom with (i.inv ≫ i.hom).hom,
+   simp, refl,
+  end }
+
+lemma app_cone_fst (w : pullback_cone s t) (c : Cᵒᵖ) : 
+  (w.π.app walking_cospan.left).app c = (app_cone_of_cone w c).fst := by refl
+
+lemma app_cone_snd (w : pullback_cone s t) (c : Cᵒᵖ) : 
+  (w.π.app walking_cospan.right).app c = (app_cone_of_cone w c).snd := by refl
+
+lemma app_cone_iso_of_iso_cone_fst_comm (w w' : pullback_cone s t) (c : Cᵒᵖ) (i : w ≅ w') : 
+  (app_cone_of_cone w c).fst = 
+  (app_cone_iso_of_iso_cone_X w w' c i).hom ≫ (app_cone_of_cone w' c).fst :=
+begin
+  change (app_cone_iso_of_iso_cone_X w w' c i).hom with i.hom.hom.app c,
+  rw [←app_cone_fst w, ←app_cone_fst w', ←nat_trans.vcomp_app, 
+      nat_trans.vcomp_eq_comp, i.hom.w' walking_cospan.left]
+end
+
+lemma app_cone_iso_of_iso_cone_snd_comm (w w' : pullback_cone s t) (c : Cᵒᵖ) (i : w ≅ w') : 
+  (app_cone_of_cone w c).snd = 
+  (app_cone_iso_of_iso_cone_X w w' c i).hom ≫ (app_cone_of_cone w' c).snd :=
+begin
+  change (app_cone_iso_of_iso_cone_X w w' c i).hom with i.hom.hom.app c,
+  rw [←app_cone_snd w, ←app_cone_snd w', ←nat_trans.vcomp_app, 
+      nat_trans.vcomp_eq_comp, i.hom.w' walking_cospan.right]
+end
+
+lemma app_cone_iso_of_iso_cone (w w' : pullback_cone s t) (c : Cᵒᵖ) (i : w ≅ w') : 
+  (app_cone_of_cone w c) ≅ (app_cone_of_cone w' c) :=
+pullback_cone.ext (app_cone_iso_of_iso_cone_X w w' c i) 
+                  (app_cone_iso_of_iso_cone_fst_comm w w' c i) 
+                  (app_cone_iso_of_iso_cone_snd_comm w w' c i)
+
+
+-- Useful result : if a cone is limit in the preshea world, then every applied cone is limit
+lemma is_limit_app_cone_of_cone (w : pullback_cone s t) (hw : is_limit w) (c : Cᵒᵖ) :
+  is_limit (app_cone_of_cone w c) :=
+begin
+  have g := app_cone_iso_of_iso_cone _ w c (is_limit.unique_up_to_iso (pullback_is_pullback s t) hw),
+  simp at g,
+  apply is_limit.of_iso_limit (app_cone_is_limit s t c) g,
 end
 
 end pullback
 
+-- Some problems see:
+-- https://leanprover.zulipchat.com/#narrow/stream/116395-maths/topic/Category.20Type
+-- local attribute [-instance]
+--   limits.has_kernel_pair_of_mono
+--   limits.has_pullback_of_left_factors_mono
+--   limits.has_pullback_of_right_factors_mono
+--   limits.has_pullback_of_comp_mono
+
 lemma mono_app_of_mono {S X : °C} (m : S ⟶ X) [mono m] (c : Cᵒᵖ) : mono (m.app c) :=
 begin 
-  let F : walking_cospan ⥤ Type u := cospan (m.app c) (m.app c), 
-  let x := limit.cone F,
   apply pullback_cone.mono_of_is_limit_mk_id_id,
-  
-  have g :=  pullback_cone.is_limit_mk_id_id m,
-  have h := pullback.iso_app m m c,
-
-
-  apply is_limit.of_iso_limit,
-  
-  exact (),
-
+  exact pullback.is_limit_app_cone_of_cone _ (pullback_cone.is_limit_mk_id_id m) c,
 end
 
 namespace classifier
