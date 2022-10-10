@@ -1,4 +1,3 @@
-import tactic.congrm
 import category_theory.limits.shapes.finite_limits
 import category_theory.closed.cartesian
 import category_theory.closed.types
@@ -123,9 +122,9 @@ end
 instance unique_obj (c : Cᵒᵖ) : unique (₸.obj c) := unique_iso T_iso c (terminal.T_unique c)
 
 -- weirdly, this is needed, because we cannot write directly (terminal.from X).app, I don't know why
-abbreviation terminal_from (X : °C) : X ⟶ ⊤_ °C:= terminal.from X
+abbreviation tfrom (X : °C) : X ⟶ ⊤_ °C:= terminal.from X
 
-@[simp] lemma terminal_app (X : °C) (c : Cᵒᵖ) (x : X.obj c): ((terminal_from X).app c) x = default := by dec_trivial
+@[simp] lemma terminal_app (X : °C) (c : Cᵒᵖ) (x : X.obj c): ((tfrom X).app c) x = default := by dec_trivial
 
 end terminal
 
@@ -144,50 +143,12 @@ namespace pullback
   X --s--> Z
   We show that we have an isomorphism of pullback cones, between the applied pullback cone in c
   and the canonical pullback cone from s_c and t_c. 
--/
 
-variables {X Y Z : °C} (s : X ⟶ Z) (t : Y ⟶ Z) (c : Cᵒᵖ)
-
-lemma cospan_flip (c : Cᵒᵖ) : (cospan s t).flip.obj c = cospan (s.app c) (t.app c) :=
-begin
-  apply category_theory.functor.ext,
-  swap,
-  { intro x, cases x,
-    { refl },
-    { cases x; refl, } },
-  { intros x y f, cases f,
-    { dsimp, simp }, --erw (functor.flip_obj_obj (cospan s t) c x) },
-    { cases f_1; refl } }
-end
-
-lemma pullback_flip : limit ((cospan s t).flip.obj c) = pullback (s.app c) (t.app c) :=
-by rw cospan_flip
-
-lemma pullback_flip' : limit ((cospan s t).flip.obj c) = limit (cospan (s.app c) (t.app c)) :=
-by rw cospan_flip
-
--- If W is the pullback of s and t, then W(c) is iso to the pullback of s_c and t_c
-lemma iso_app_X : (pullback s t).obj c ≅ pullback (s.app c) (t.app c) := 
-begin
-  rw ←pullback_flip,
-  dunfold pullback,
-  change limit ((cospan s t).flip.obj c) with lim.obj ((cospan s t).flip.obj c),
-  rw ←functor.comp_obj, simp,
-  exact (limit_iso_flip_comp_lim (cospan s t)).app c,
-end
-
-lemma iso_app_of_is_limit (c : Cᵒᵖ) (w : pullback_cone s t) (hw : is_limit w) 
-  (wc : pullback_cone (s.app c) (t.app c)) (hwc : is_limit wc) : w.X.obj c ≅ wc.X :=
-begin
-  apply iso.trans ((is_limit.cone_point_unique_up_to_iso hw (limit.is_limit _)).app c),
-  apply iso.trans _ (is_limit.cone_point_unique_up_to_iso hwc (limit.is_limit _)).symm,
-  exact iso_app_X s t c,
-end
-
-/-
   We constuct an explicit cone isomorphim between the pullback cone of s_c and t_c
   and the (pullback cone of s and t)_c  
 -/
+
+variables {X Y Z : °C} (s : X ⟶ Z) (t : Y ⟶ Z) (c : Cᵒᵖ)
 
 abbreviation pullback_fst_app : (pullback s t).obj c ⟶ X.obj c := 
 (pullback.fst : pullback s t ⟶ X).app c
@@ -231,7 +192,6 @@ begin
   { simp, },
   { intros x y f, rw eval_map_eq_simp, refl }
 end
-
 
 lemma coerce_pullback_limit_evaluation : 
   limit (cospan s t ⋙ (evaluation Cᵒᵖ (Type u)).obj c) = pullback (s.app c) (t.app c) :=
@@ -300,6 +260,7 @@ begin
 end
 
 variables {s t}
+
 def app_cone_of_cone (w : pullback_cone s t) (c : Cᵒᵖ) := 
   pullback_cone.mk (w.fst.app c) (w.snd.app c) (app_cone_of_cone_comm w c)
 
@@ -354,7 +315,7 @@ pullback_cone.ext (app_cone_iso_of_iso_cone_X w w' c i)
                   (app_cone_iso_of_iso_cone_snd_comm w w' c i)
 
 
--- Useful result : if a cone is limit in the preshea world, then every applied cone is limit
+-- Useful result : if a cone is limit in the presheaves world, then every applied cone is limit
 lemma is_limit_app_cone_of_cone (w : pullback_cone s t) (hw : is_limit w) (c : Cᵒᵖ) :
   is_limit (app_cone_of_cone w c) :=
 begin
@@ -373,14 +334,16 @@ end pullback
 --   limits.has_pullback_of_right_factors_mono
 --   limits.has_pullback_of_comp_mono
 
-lemma mono_app_of_mono {S X : °C} (m : S ⟶ X) [mono m] (c : Cᵒᵖ) : mono (m.app c) :=
+instance mono_app_of_mono {S X : °C} (m : S ⟶ X) [mono m] (c : Cᵒᵖ) : mono (m.app c) :=
 begin 
   apply pullback_cone.mono_of_is_limit_mk_id_id,
   exact pullback.is_limit_app_cone_of_cone _ (pullback_cone.is_limit_mk_id_id m) c,
 end
 
 namespace classifier
-variables {S X : °C} (m : S ⟶ X) [mono m]
+variables {S X : °C} (m : S ⟶ X) [mono m] 
+
+
 
 /- The classifiyng arrow of m : S ⟶ X is the sieve
   χ_c(x) = {g : d ⟶ c | ∃ y : S(d), m_d(y) = X(g)(x) }
@@ -395,7 +358,7 @@ def χ_app (c : Cᵒᵖ) (x : X.obj c) : sieve c.unop :=
   rw [op_comp, functor_to_types.naturality, hw, functor.map_comp'], refl
   end
 }
-
+#check χ_app
 def χ : X ⟶ Ω := 
 { app := χ_app m,
   naturality' := 
@@ -405,6 +368,126 @@ def χ : X ⟶ Ω :=
     ext1, fsplit;
     { intro a, cases a, fsplit, exact a_w, rw [op_comp, functor.map_comp'] at *, assumption },
   end }
+
+-- We work at the level of type, and we will gather everything into a natural transformation
+namespace app
+variable (c : Cᵒᵖ)
+
+lemma subtype_iff (y : X.obj c) : (∃ x : S.obj c, m.app c x = y) ↔ (χ m).app c y = ⊤ :=
+begin
+  split,
+  { intro h, cases h with w h, 
+    ext d, simp,
+    use S.map (f.op) w, rw ←h,
+    change X.map f.op (m.app c w) with (m.app c ≫ X.map f.op) w,
+    rw ←nat_trans.naturality', refl },
+  { intro h, rw sieve.ext_iff  at h, simp at h,
+    specialize h (𝟙 c.unop), cases h with w h,
+    change c with opposite.op (opposite.unop c),
+    use w, rw h, simp, 
+    conv_rhs { rw ←id.def y},
+    rw [←types_id, ←functor.map_id'] } 
+end
+
+-- The pullback object of χ_m and true is (at c) the following:
+abbreviation pb_object := { y : X.obj c // ∃ x : S.obj c, m.app c x = y }
+abbreviation pb_object' := { p : (X.obj c) × (₸.obj c) // (χ m).app c p.1 = truth.app c p.2 }
+
+-- There is often two version of the maps we develop, the one with ' 
+-- is the one in in the hom set of Types as a category
+-- Sometimes Lean doesn't want to directly type it correctly
+
+def map_hom : pb_object m c → pb_object' m c := 
+λ w, ⟨ (w.val, default), by { simp [←subtype_iff], exact w.prop }⟩
+
+def map_hom' : pb_object m c ⟶ pb_object' m c := map_hom m c
+
+def map_inv : pb_object' m c → pb_object m c := 
+λ w, ⟨w.val.1, by { rw subtype_iff, exact w.prop }⟩
+
+def map_inv' : pb_object' m c ⟶ pb_object m c := map_inv m c
+
+def iso_pb_objects : iso (pb_object m c) (pb_object' m c) := 
+{ hom := map_hom' m c,
+  inv := map_inv' m c,
+  hom_inv_id' := by { ext, rw [types_id, types_comp_apply], refl },
+  inv_hom_id' := by ext; simp [types_id, types_comp_apply]; refl }
+
+lemma pullback_condition_to_prop (u : pullback_cone (χ m) truth) (c : Cᵒᵖ) : 
+  ∀ x : u.X.obj c, (u.fst.app c ≫ (χ m).app c) x = ⊤ :=
+by simp [←nat_trans.comp_app, u.condition]
+
+def lift_to_pb_object (u : pullback_cone (χ m) truth) (c : Cᵒᵖ) : 
+  u.X.obj c → pb_object m c :=
+λ x : u.X.obj c, ⟨ u.fst.app c x, by rw [subtype_iff, ←types_comp_apply _ ((χ m).app c), 
+                                         pullback_condition_to_prop]⟩
+
+def lift_to_pb_object' (u : pullback_cone (χ m) truth) (c : Cᵒᵖ) : 
+  u.X.obj c ⟶ pb_object m c := lift_to_pb_object m u c
+
+-- Can we do differently?
+noncomputable def pb_object_to_subtype_obj (x : pb_object m c) := 
+  (classical.indefinite_description _ x.prop)
+
+noncomputable def pb_object_to_obj : pb_object m c → S.obj c :=
+  λ x, (pb_object_to_subtype_obj m c x).val
+
+noncomputable def pb_object_to_obj' : pb_object m c ⟶ S.obj c := pb_object_to_obj m c
+
+def pb_lift (u : pullback_cone (χ m) truth) (c : Cᵒᵖ) : u.X.obj c ⟶ S.obj c := 
+  lift_to_pb_object' m u c ≫ pb_object_to_obj' m c
+
+def pb_lift_fst_comm (u : pullback_cone (χ m) truth) (c : Cᵒᵖ) : 
+  pb_lift m u c ≫ m.app c = u.fst.app c :=
+begin
+  ext, simp,
+  exact (pb_object_to_subtype_obj m c ⟨u.fst.app c x, _⟩).prop,
+end
+
+-- This is quite easy as we have a mono and the commutation above
+def pb_lift_naturality (u : pullback_cone (χ m) truth) (c d : Cᵒᵖ) (f : c ⟶ d) :
+  u.X.map f ≫ app.pb_lift m u d = app.pb_lift m u c ≫ S.map f :=
+begin
+  symmetry,
+  rw [←cancel_mono (m.app d), assoc, nat_trans.naturality, ←assoc, pb_lift_fst_comm, 
+      ←nat_trans.naturality, ←pb_lift_fst_comm, assoc],  
+end
+
+-- TODO prove this, refactor the previous thm like this one
+lemma subtype_iff_pb (σ : X ⟶ Ω ) (classifies : classifying_pullback truth m σ) (y : X.obj c) : 
+  (∃ x : S.obj c, m.app c x = y) ↔ σ.app c y = ⊤ :=
+begin
+    split,
+  { intro h, cases h with w h, 
+    rw ←h, 
+    have g := classifies.comm,
+    rw [←types_comp_apply (m.app c) (σ.app c), ←nat_trans.comp_app, classifies.comm],
+    refl },
+  { intro h, rw sieve.ext_iff  at h, simp at h,
+    have comm : (𝟙 _) ≫ σ.app c = (terminal.tfrom X).app c ≫ truth.app c :=
+    begin
+      rw id_comp, ext z, sorry, --simp,  sorry
+    end,
+    sorry
+    -- let l : X ⟶ S := pullback_cone.is_limit.lift' classifies.is_pb _ _ comm,
+    
+    --  cases h with w h,
+    -- change c with opposite.op (opposite.unop c),
+    -- use w, rw h, simp, 
+    -- conv_rhs { rw ←id.def y},
+    -- rw [←types_id, ←functor.map_id'] 
+    } 
+end
+
+def uniquely (σ : X ⟶ Ω ) (h : classifying truth m σ) (x : X.obj c) : σ.app c x = (χ m).app c x :=
+begin
+  apply sieve.ext,
+  intros d f,
+  sorry
+  -- split,
+end
+
+end app
 
 lemma pullback_condition : m ≫ χ m = terminal.from S ≫ truth :=
 begin
@@ -416,22 +499,46 @@ end
 
 def pb_cone : pullback_cone (χ m) truth := pullback_cone.mk m (terminal.from S) (pullback_condition m)
 
-def pb_lift (u : pullback_cone (χ m) truth) : u.X ⟶ S := sorry
+def pb_lift (u : pullback_cone (χ m) truth) : u.X ⟶ S :=
+{ app := app.pb_lift m u,
+  naturality' := app.pb_lift_naturality m u
+  }
+
+def pb_lift_fst_comm (u : pullback_cone (χ m) truth) : pb_lift m u ≫ m = u.fst := 
+begin
+  ext, rw [nat_trans.comp_app, ←app.pb_lift_fst_comm], refl
+end
+
 lemma is_limit_pb_cone : is_limit (pb_cone m) := 
 begin
-sorry -- apply pullback_cone.is_limit.mk
-
+apply pullback_cone.is_limit.mk (pullback_condition m) (pb_lift m),
+{ intro s, exact pb_lift_fst_comm _ _ },
+{ intro s, rw terminal.comp_from _, simp },
+{ intros s v h _, rwa [←pb_lift_fst_comm, cancel_mono] at h, }
 end
+
+def χ_classifying : classifying truth m (χ m) :=
+{ comm := pullback_condition m,
+  is_pb := is_limit_pb_cone m }
+
+def uniquely (σ : X ⟶ Ω ) (h : classifying truth m σ) : χ m = σ :=
+begin
+  ext : 3, symmetry, apply app.uniquely, assumption
+end
+
+def χ_is_subobject_classifier : is_subobject_classifier (@truth C _ _) :=
+{ classifier_of := @χ C _ _,
+  classifies' := @χ_classifying C _ _,
+  uniquely' := @uniquely C _ _ }
 
 end classifier
 
+instance has_subobject_classifier_hatC : has_subobject_classifier °C :=
+{ Ω := Ω, 
+  truth := truth, 
+  is_subobj_classifier := classifier.χ_is_subobject_classifier }
 
 end presheaf
-instance has_subobject_classifier_hatC : has_subobject_classifier °C :=
-begin
-  sorry
-end
 
-
--- instance topos_hatC : topos °C := topos.mk
+instance topos_hatC : topos °C := topos.mk
  
