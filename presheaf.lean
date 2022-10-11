@@ -10,7 +10,7 @@ import category_theory.sites.sieves
 import topos
 import subobject_classifier
 import pullbacks
-import image
+
 
 open category_theory category_theory.category category_theory.limits classifier functor
 
@@ -26,10 +26,11 @@ local notation `₸` := ⊤_ (°C)
 
 namespace presheaf
 
-/-
-  Ω in a presheaf topos is defined to be
-  Ω_c = all the sieves on c
--/
+
+/- We show that any presheaf over a small category has a suboject classifier
+   This is done elementarily, wihtout any appeal to Yoneda, and we work with sieves 
+  
+  Ω in a presheaf topos is defined to be Ω_c = all the sieves on c -/
 
 
 def sieve_map (c d : C) (f : c ⟶ d) : sieve d ⟶ sieve c := sieve.pullback f
@@ -53,6 +54,8 @@ def Ω : °C := {
 }
 
 @[simp] lemma obj' (c : Cᵒᵖ) : (Ω.obj c) = (Ω_obj c) := by refl
+@[simp] lemma map' {c d : Cᵒᵖ} (f : c ⟶ d) : (Ω.map f) = (Ω_map c d f) := by refl
+
 instance (c : Cᵒᵖ) : complete_lattice (Ω.obj c) := by simp; apply_instance
 
  
@@ -124,8 +127,16 @@ instance unique_obj (c : Cᵒᵖ) : unique (₸.obj c) := unique_iso T_iso c (te
 -- weirdly, this is needed, because we cannot write directly (terminal.from X).app, I don't know why
 abbreviation tfrom (X : °C) : X ⟶ ⊤_ °C:= terminal.from X
 
-@[simp] lemma terminal_app (X : °C) (c : Cᵒᵖ) (x : X.obj c): ((tfrom X).app c) x = default := by dec_trivial
+@[simp] lemma terminal_app (X : °C) (c : Cᵒᵖ) (x : X.obj c) : ((tfrom X).app c) x = default := by dec_trivial
 
+-- Pick the object
+def tto_app (X : °C) (c : Cᵒᵖ) (x : X.obj c) : ₸.obj c ⟶ X.obj c := λ _, x 
+
+-- def tto (X : °C) (α : Π c : Cᵒᵖ, X.obj c) : ₸ ⟶ X :=
+-- { app := λ c, tto_app X c (α c),
+--   naturality' := begin
+--   intros c d f, ext x, unfold tto_app, simp,
+--   end } 
 end terminal
 
 namespace pullback
@@ -358,7 +369,7 @@ def χ_app (c : Cᵒᵖ) (x : X.obj c) : sieve c.unop :=
   rw [op_comp, functor_to_types.naturality, hw, functor.map_comp'], refl
   end
 }
-#check χ_app
+
 def χ : X ⟶ Ω := 
 { app := χ_app m,
   naturality' := 
@@ -453,7 +464,8 @@ begin
       ←nat_trans.naturality, ←pb_lift_fst_comm, assoc],  
 end
 
--- TODO prove this, refactor the previous thm like this one
+-- For the converse, to pick an object from S, we use the pullback condition
+-- on the terminal object
 lemma subtype_iff_pb (σ : X ⟶ Ω ) (classifies : classifying_pullback truth m σ) (y : X.obj c) : 
   (∃ x : S.obj c, m.app c x = y) ↔ σ.app c y = ⊤ :=
 begin
@@ -463,28 +475,51 @@ begin
     have g := classifies.comm,
     rw [←types_comp_apply (m.app c) (σ.app c), ←nat_trans.comp_app, classifies.comm],
     refl },
-  { intro h, rw sieve.ext_iff  at h, simp at h,
-    have comm : (𝟙 _) ≫ σ.app c = (terminal.tfrom X).app c ≫ truth.app c :=
-    begin
-      rw id_comp, ext z, sorry, --simp,  sorry
-    end,
-    sorry
-    -- let l : X ⟶ S := pullback_cone.is_limit.lift' classifies.is_pb _ _ comm,
-    
-    --  cases h with w h,
-    -- change c with opposite.op (opposite.unop c),
-    -- use w, rw h, simp, 
-    -- conv_rhs { rw ←id.def y},
-    -- rw [←types_id, ←functor.map_id'] 
-    } 
+  { intro h, rw sieve.ext_iff at h, 
+    have comm : terminal.tto_app X c y ≫ σ.app c = (𝟙 _) ≫ truth.app c := by { ext, exact h f },
+    let l := pullback_cone.is_limit.lift' 
+             (pullback.is_limit_app_cone_of_cone (pullback_cone.mk _ _ classifies.comm) 
+             classifies.is_pb c) _ _ comm,
+    use (l.val default),
+    exact congr_fun l.prop.left default } 
 end
 
-def uniquely (σ : X ⟶ Ω ) (h : classifying truth m σ) (x : X.obj c) : σ.app c x = (χ m).app c x :=
+instance has_coe_fun_Ω : has_coe_to_fun (Ω.obj c) (λ _, presieve (c.unop)) := 
+  by { rw obj' c, apply_instance }
+
+-- see : 
+-- https://math.stackexchange.com/questions/4304431/
+-- characteristic-function-for-subobject-classifier-in-the-topos-of-presheaves
+
+variable {c}
+
+lemma in_sieve_iff_id {d : C} (σ : X ⟶ Ω) (f : d ⟶ c.unop) (y : X.obj c) : 
+  (σ.app c y) f ↔ (σ.app (opposite.op d) (X.map f.op y)) (𝟙 d) :=
+begin
+  rw [←types_comp_apply _ (σ.app (opposite.op d)), nat_trans.naturality],
+  dsimp, rw map', dunfold Ω_map sieve_map,
+  rw [sieve.pullback_eq_top_iff_mem, ←sieve.id_mem_iff_eq_top],
+  refl
+end
+
+lemma in_sieve_iff_top {d : C} (σ : X ⟶ Ω) (f : d ⟶ c.unop) (y : X.obj c) : 
+  (σ.app c y) f ↔ (σ.app (opposite.op d) (X.map f.op y)) = ⊤ := 
+begin
+  rw [←sieve.id_mem_iff_eq_top, in_sieve_iff_id], refl
+end
+
+lemma in_sieve_iff_exists {d : C} (σ : X ⟶ Ω ) (classifies : classifying_pullback truth m σ) 
+  (y : X.obj c) (f : d ⟶ c.unop) : 
+  (σ.app c y) f ↔ ∃ x : S.obj (opposite.op d), m.app (opposite.op d) x = X.map f.op y := 
+by rwa [in_sieve_iff_top, subtype_iff_pb]
+
+variable (c)
+
+def uniquely (σ : X ⟶ Ω ) (h : classifying truth m σ) (y : X.obj c) : σ.app c y = (χ m).app c y :=
 begin
   apply sieve.ext,
   intros d f,
-  sorry
-  -- split,
+  rw [in_sieve_iff_exists m σ h y, subtype_iff, ←in_sieve_iff_top]
 end
 
 end app
