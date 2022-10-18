@@ -73,6 +73,13 @@ def classifies {U X : C} (f : U ⟶ X) [mono f] : classifying (truth C) f (class
 lemma uniquely {U X : C} (f : U ⟶ X) [mono f] (χ₁ : X ⟶ Ω C) (hχ : classifying (truth C) f χ₁) : classifier_of f = χ₁ :=
 (subobj_classifier_is_subobj_classifier C).uniquely' f χ₁ hχ
  
+lemma classifier.comm {U X : C} (f : U ⟶ X) [mono f] : 
+  f ≫ (classifier_of f) = terminal.from _ ≫ truth C :=
+classifying_pullback.comm (classifies _)
+
+lemma classifier.is_pb {U X : C} (f : U ⟶ X) [mono f] :
+  is_limit (pullback_cone.mk _ _ (classifier.comm f)) := classifying_pullback.is_pb (classifies _)
+  
 end classifier
 
 /- If we have σ : X → Ω then we have the following pullback, we call { σ } the canonical subobject
@@ -95,13 +102,26 @@ instance canonical_incl_mono {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) :
   mono (canonical_incl σ) := 
 pullback.fst_of_mono.
 
-lemma pb_condition_canonical_inclusion {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) :
+lemma canonical_incl_comm {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) :
   canonical_incl σ ≫ σ = terminal.from s{ σ }s ≫ truth C :=
 begin
   convert pullback.condition
 end
 
-abbreviation to_sub {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) : subobject X := subobject.mk (canonical_incl σ)
+abbreviation canonical_sub {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) : subobject X := 
+subobject.mk (canonical_incl σ)
+
+lemma canonical_sub_iso_canonical {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) : 
+  ↑(canonical_sub σ) ≅ s{ σ }s := 
+begin
+  apply subobject.iso_of_eq_mk _ (canonical_incl σ), refl
+end
+
+lemma canonical_iso_canonical_sub {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) : 
+  s{ σ }s ≅ ↑(canonical_sub σ) := 
+begin
+exact (canonical_sub_iso_canonical σ).symm
+end
 
 /- The truth classifies the identity -/
 

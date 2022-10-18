@@ -18,7 +18,6 @@ universes v u
 
 noncomputable theory
 
-
 variables {C : Type u} [category.{u} C] [small_category C]
 
 local notation `°`:std.prec.max_plus C := Cᵒᵖ ⥤ Type u
@@ -26,12 +25,10 @@ local notation `₸` := ⊤_ (°C)
 
 namespace presheaf
 
-
 /- We show that any presheaf over a small category has a suboject classifier
    This is done elementarily, wihtout any appeal to Yoneda, and we work with sieves 
   
   Ω in a presheaf topos is defined to be Ω_c = all the sieves on c -/
-
 
 def sieve_map (c d : C) (f : c ⟶ d) : sieve d ⟶ sieve c := sieve.pullback f
 
@@ -139,6 +136,18 @@ def tto_app (X : °C) (c : Cᵒᵖ) (x : X.obj c) : ₸.obj c ⟶ X.obj c := λ 
 --   end } 
 end terminal
 
+namespace initial
+-- We show that the initial presheaf is the empty type at each level
+lemma pempty_obj_iso (c : Cᵒᵖ) : (⊥_ °C).obj c ≅ pempty :=
+begin
+  apply iso.trans _ (limits.types.initial_iso),
+  have to_init := initial.to ((category_theory.functor.const Cᵒᵖ).obj (⊥_ Type u)),
+  have h := strict_initial initial_is_initial (to_init.app c),
+  resetI,
+  apply as_iso (to_init.app c),
+end
+
+end initial
 namespace pullback
 /-
   Here we show that pullbacks are computed pointwise in °C, so we have 
@@ -568,12 +577,12 @@ def χ_is_subobject_classifier : is_subobject_classifier (@truth C _ _) :=
 
 end classifier
 
-instance has_subobject_classifier_hatC : has_subobject_classifier °C :=
+instance has_subobject_classifier_presheaves_C: has_subobject_classifier °C :=
 { Ω := Ω, 
   truth := truth, 
   is_subobj_classifier := classifier.χ_is_subobject_classifier }
 
 end presheaf
 
-instance topos_hatC : topos °C := topos.mk
+instance topos_presheaves_C : topos °C := topos.mk
  
