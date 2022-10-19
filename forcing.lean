@@ -183,7 +183,25 @@ variables (σ) (τ : X ⟶ Ω °C)
 
 lemma forcing_and : pforces (σ ⊓ τ) x ↔ pforces σ x ∧ pforces τ x :=
 begin
-  sorry
+  split; intro h,
+  { split; cases h with u h,
+      use u ≫ pullback.lift (canonical_incl (σ ⊓ τ)) (terminal.from _) 
+                (external_iso_internal.left_square_commutes_fst σ τ),
+      rwa [assoc, pullback.lift_fst],
+      use u ≫ pullback.lift (canonical_incl (σ ⊓ τ)) (terminal.from _) 
+                (external_iso_internal.left_square_commutes_snd σ τ),
+      rwa [assoc, pullback.lift_fst] },
+  { have comm : x ≫ limits.prod.lift σ τ = terminal.from _ ≫ truth_truth °C := 
+    begin
+      apply limits.prod.hom_ext; rw assoc; rw assoc, 
+        repeat { rw limits.prod.lift_fst }, cases h.left with u hu,
+        rw [←hu, assoc, canonical_incl_comm, ←assoc, terminal.comp_from u],
+        repeat { rw limits.prod.lift_snd }, cases h.right with u hu,
+        rw [←hu, assoc, canonical_incl_comm, ←assoc, terminal.comp_from u],
+    end,
+    let l := pullback_cone.is_limit.lift' (external_iso_internal.is_pullback_and_left σ τ) 
+              x (terminal.from _) comm,
+    exact ⟨l.val, l.prop.left ⟩ }
 end
 
 end forcing

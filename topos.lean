@@ -29,3 +29,17 @@ attribute [instance] topos.lim topos.sub topos.cc
 variables {C} [topos.{v} C]
 
 abbreviation lift_truth (X : C) : X ⟶ Ω C := terminal.from X ≫ truth C
+
+
+variable (X : C)
+
+def sub_to_hom : subobject X → (X ⟶ Ω C) := λ s, classifier_of s.arrow
+def hom_to_sub : (X ⟶ Ω C) → subobject X := λ σ, canonical_sub σ
+
+lemma sub_equiv_hom : subobject X ≃ (X ⟶ Ω C) := 
+{ to_fun := sub_to_hom X,
+  inv_fun := hom_to_sub X,
+  left_inv := λ S, sub_eq_canonical_sub_of_classifier S,  
+  right_inv := λ σ, classifier.uniquely _ _ 
+                   (classifying_pullback.mk _ (is_pullback_canonical_arrow _)) }
+

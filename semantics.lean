@@ -333,6 +333,21 @@ begin
   rwa [assoc, assoc, lift_snd, lift_snd] at g,
 end
 
+def left_cone_and : pullback_cone (lift σ τ) (truth_truth C) :=
+  pullback_cone.mk (canonical_incl (σ ⊓ τ)) (terminal.from s{σ ⊓ τ}s) (left_square_commutes σ τ)
+
+lemma is_pullback_and_left : is_limit (left_cone_and σ τ) :=
+begin
+  unfold left_cone_and,
+  refine left_square_is_pullback (terminal.from _) (terminal.from _) 
+          (lift σ τ) (and_arrow C) (canonical_incl (σ ⊓ τ)) 
+          (truth_truth C) (truth C) _ _ _ _,
+    { erw classifier.comm },
+    { apply classifier.is_pb },
+    { simp, convert pullback_is_pullback (σ ⊓ τ) (truth C), 
+     apply is_terminal.hom_ext (terminal_is_terminal) }
+end
+
 def left_lift : s{σ ⊓ τ}s ⟶ s{σ}s :=  
 pullback.lift (canonical_incl (σ ⊓ τ)) (terminal.from _) (left_square_commutes_fst _ _)
 
@@ -418,7 +433,6 @@ lemma and : ↑ ((canonical_sub σ) ⊓ (canonical_sub τ)) ≅ s{ σ ⊓ τ }s 
 iso.trans (subobject.iso_of_eq _ _ (and_sub σ τ)) (canonical_sub_iso_canonical (σ ⊓ τ))
 
 end external_iso_internal
-
 
 namespace validity
 

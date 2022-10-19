@@ -94,37 +94,58 @@ notation `s{` σ `}s` := pullback σ (classifier.truth _)
 open classifier
 
 abbreviation canonical_incl {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) : s{ σ }s ⟶ X := pullback.fst
+
+
 def canonical_incl_of_mono {X Y : C} [has_pullbacks C] (m : X ⟶ Y) [mono m] : 
   s{ classifier_of m }s ⟶ Y :=
 canonical_incl (classifier_of m)
 
-instance canonical_incl_mono {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) : 
-  mono (canonical_incl σ) := 
-pullback.fst_of_mono.
+variables [has_pullbacks C] (σ : X ⟶ Ω C)
 
-lemma canonical_incl_comm {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) :
-  canonical_incl σ ≫ σ = terminal.from s{ σ }s ≫ truth C :=
+instance canonical_incl_mono : mono (canonical_incl σ) := pullback.fst_of_mono
+
+lemma canonical_incl_comm :canonical_incl σ ≫ σ = terminal.from s{ σ }s ≫ truth C :=
 begin
   convert pullback.condition
 end
 
-abbreviation canonical_sub {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) : subobject X := 
-subobject.mk (canonical_incl σ)
+abbreviation canonical_sub : subobject X := subobject.mk (canonical_incl σ)
 
-lemma canonical_sub_iso_canonical {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) : 
-  ↑(canonical_sub σ) ≅ s{ σ }s := 
+def canonical_sub_iso_canonical : ↑(canonical_sub σ) ≅ s{ σ }s :=
 begin
   apply subobject.iso_of_eq_mk _ (canonical_incl σ), refl
 end
 
-lemma canonical_iso_canonical_sub {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) : 
-  s{ σ }s ≅ ↑(canonical_sub σ) := 
+def canonical_iso_canonical_sub : s{ σ }s ≅ ↑(canonical_sub σ) := 
+(canonical_sub_iso_canonical σ).symm
+
+lemma sub_eq_canonical_sub_of_classifier (S : subobject X) : 
+  canonical_sub (classifier_of S.arrow) = S :=
 begin
-exact (canonical_sub_iso_canonical σ).symm
+  ext1,
+  exact is_limit.cone_point_unique_up_to_iso_hom_comp 
+    (pullback_is_pullback _ _) (classifier.is_pb S.arrow) walking_cospan.left
+end
+
+def pb_cone_of_canonical_sub_arrow : pullback_cone σ (truth C) :=
+pullback_cone.mk (canonical_sub σ).arrow (terminal.from _) 
+(by { rw [←subobject.underlying_iso_hom_comp_eq_mk, assoc, 
+          canonical_incl_comm, ←assoc, terminal.comp_from] })
+
+lemma pb_cone_of_canonical_sub_arrow_X : 
+  (pb_cone_of_canonical_sub_arrow σ).X = ↑(canonical_sub σ) := rfl
+
+lemma is_pullback_canonical_arrow :
+  is_limit (pb_cone_of_canonical_sub_arrow σ) :=
+begin
+  apply is_limit.of_iso_limit (pullback_is_pullback σ (truth C)),
+  symmetry,
+  refine pullback_cone.ext (subobject.underlying_iso (canonical_incl σ)) _ 
+    (is_terminal.hom_ext (terminal_is_terminal) _ _),
+  symmetry, rw [pullback_cone.mk_fst, subobject.underlying_iso_hom_comp_eq_mk], refl
 end
 
 /- The truth classifies the identity -/
-
 variable (C)
 
 lemma terminal_from_self_is_id : terminal.from (⊤_ C) = 𝟙 (⊤_ C) := 
