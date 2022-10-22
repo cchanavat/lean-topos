@@ -91,7 +91,12 @@ end classifier
 variable {C}
 notation `s{` σ `}s` := pullback σ (classifier.truth _)
 
+
+
 open classifier
+
+/- true_X from McLane -/
+abbreviation lift_truth (X : C) : X ⟶ Ω C := terminal.from X ≫ truth C
 
 abbreviation canonical_incl {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) : s{ σ }s ⟶ X := pullback.fst
 

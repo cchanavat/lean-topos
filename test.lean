@@ -1,10 +1,37 @@
-import category_theory.limits.types
+-- def prod_functor (C : Type u) [category.{v} C] [has_binary_products C] : C × C ⥤ C := 
+-- uncurry.obj prod.functor 
+-- def braid_functor (C : Type u) [category.{v} C] [has_binary_products C] : C × C ⥤ C := 
+-- (prod.braiding C C).functor ⋙ uncurry.obj prod.functor 
 
-open category_theory category_theory.limits functor
-
-universes u
-
-local attribute [-instance]
-  limits.has_kernel_pair_of_mono
-
-example {X Y : Type u} (m : X ⟶ Y) : has_pullback m m := infer_instance
+-- def prod_iso_braid  (C : Type u) [category.{v} C] [has_binary_products C] : 
+--   prod_functor C ≅ braid_functor C :=
+-- { hom := 
+--   { app := λ x, (prod.braiding x.1 x.2).hom ,
+--     naturality' :=
+--     begin 
+--       intros, dunfold prod_functor prod.functor braid_functor, 
+--       simp only [uncurry_obj_map, limits.prod.map_map, comp_id, id_comp, prod.braiding_hom, 
+--                   prod.comp_lift, limits.prod.map_snd, limits.prod.map_fst, functor.comp_map, 
+--                   prod.braiding_functor_map, prod.lift_map], 
+--     end },
+--   inv := 
+--   { app := λ x, (prod.braiding x.2 x.1).hom,
+--     naturality' := 
+--     begin 
+--       intros, dunfold prod_functor prod.functor braid_functor, 
+--       simp only [functor.comp_map, prod.braiding_functor_map, uncurry_obj_map, 
+--                   limits.prod.map_map, comp_id, id_comp, prod.braiding_hom, prod.comp_lift, 
+--                   limits.prod.map_snd, limits.prod.map_fst, prod.lift_map],
+--     end },
+--   hom_inv_id' := 
+--   begin 
+--     apply nat_trans.ext, ext1, 
+--     simp only [prod.braiding_hom, nat_trans.comp_app, prod.symmetry'], 
+--     refl
+--   end,
+--   inv_hom_id' := 
+--   begin
+--     apply nat_trans.ext, ext1,
+--     simp only [prod.braiding_hom, nat_trans.comp_app, prod.symmetry'],
+--     refl
+--   end }

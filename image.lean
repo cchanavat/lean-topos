@@ -2,7 +2,6 @@ import category_theory.limits.shapes
 import category_theory.limits.preserves.limits
 
 
-import topos
 import subobject_classifier
 import pullbacks
 /-!
@@ -11,11 +10,11 @@ import pullbacks
 Prove that there is an image factorisation for each morphism inside a topos
 TODO : prove that e is epi, will be needed for the forcing.
 -/
-open category_theory category_theory.category category_theory.limits topos classifier
+open category_theory category_theory.category category_theory.limits classifier
 
 noncomputable theory
 universes u v
-variables {C : Type u} [category.{v} C] [topos.{v} C] [has_finite_colimits.{v} C]
+variables {C : Type u} [category.{v} C] [has_finite_limits C] [has_subobject_classifier C]
 
 /- We need to prove some statement about the image now -/
 namespace image
@@ -49,6 +48,8 @@ def monic_to_fork_lift {X Y : C} (m : X ⟶ Y) [mono m]
   (f : fork (lift_truth Y) (classifier_of m)) :=
 fork.is_limit.lift' (monic_is_limit_fork m) (fork.ι f) (fork.condition f)
 
+
+variable [has_finite_colimits C]
 
 abbreviation cokernel {X Y : C} (f : X ⟶ Y) := pushout f f
 abbreviation cokernel.x {X Y : C} (f : X ⟶ Y) := (pushout.inl : Y ⟶ cokernel f)
