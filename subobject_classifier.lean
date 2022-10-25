@@ -100,7 +100,6 @@ abbreviation lift_truth (X : C) : X ⟶ Ω C := terminal.from X ≫ truth C
 
 abbreviation canonical_incl {X : C} [has_pullbacks C] (σ : X ⟶ Ω C) : s{ σ }s ⟶ X := pullback.fst
 
-
 def canonical_incl_of_mono {X Y : C} [has_pullbacks C] (m : X ⟶ Y) [mono m] : 
   s{ classifier_of m }s ⟶ Y :=
 canonical_incl (classifier_of m)
@@ -109,7 +108,7 @@ variables [has_pullbacks C] (σ : X ⟶ Ω C)
 
 instance canonical_incl_mono : mono (canonical_incl σ) := pullback.fst_of_mono
 
-lemma canonical_incl_comm :canonical_incl σ ≫ σ = terminal.from s{ σ }s ≫ truth C :=
+lemma canonical_incl_comm : canonical_incl σ ≫ σ = terminal.from s{ σ }s ≫ truth C :=
 begin
   convert pullback.condition
 end
@@ -149,6 +148,20 @@ begin
     (is_terminal.hom_ext (terminal_is_terminal) _ _),
   symmetry, rw [pullback_cone.mk_fst, subobject.underlying_iso_hom_comp_eq_mk], refl
 end
+
+lemma canonical_is_pullback : 
+  is_limit (pullback_cone.mk (canonical_incl σ) (terminal.from _) (canonical_incl_comm σ)) :=
+begin
+ convert pullback_is_pullback _ _,
+  apply is_terminal.hom_ext terminal_is_terminal,
+end
+
+lemma canonical_incl_classifies : classifying (truth C) (canonical_incl σ) σ :=
+{ comm := canonical_incl_comm σ,
+  is_pb := canonical_is_pullback σ }
+ 
+@[simp] lemma classifier_of_canonical_incl_eq_self : classifier_of (canonical_incl σ) = σ :=
+uniquely _ _ (canonical_incl_classifies σ)
 
 /- The truth classifies the identity -/
 variable (C)

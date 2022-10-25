@@ -4,6 +4,7 @@ import category_theory.limits.preserves.limits
 
 import subobject_classifier
 import pullbacks
+
 /-!
 # Image inside a topos
 
