@@ -79,7 +79,7 @@ classifying_pullback.comm (classifies _)
 
 lemma classifier.is_pb {U X : C} (f : U ⟶ X) [mono f] :
   is_limit (pullback_cone.mk _ _ (classifier.comm f)) := classifying_pullback.is_pb (classifies _)
-  
+
 end classifier
 
 /- If we have σ : X → Ω then we have the following pullback, we call { σ } the canonical subobject
@@ -94,6 +94,7 @@ notation `s{` σ `}s` := pullback σ (classifier.truth _)
 
 
 open classifier
+
 
 /- true_X from McLane -/
 abbreviation lift_truth (X : C) : X ⟶ Ω C := terminal.from X ≫ truth C
@@ -162,6 +163,8 @@ lemma canonical_incl_classifies : classifying (truth C) (canonical_incl σ) σ :
  
 @[simp] lemma classifier_of_canonical_incl_eq_self : classifier_of (canonical_incl σ) = σ :=
 uniquely _ _ (canonical_incl_classifies σ)
+
+
 
 /- The truth classifies the identity -/
 variable (C)

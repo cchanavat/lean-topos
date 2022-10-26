@@ -9,6 +9,7 @@ import category_theory.monad.monadicity
 import category_theory.functor.basic
 
 import topos
+import direct_image
 
 open category_theory category_theory.category category_theory.limits category_theory.cartesian_closed topos classifier opposite 
 

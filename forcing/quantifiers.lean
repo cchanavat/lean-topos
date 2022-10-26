@@ -3,6 +3,7 @@ import category_theory.subobject.basic
 import category_theory.subobject.lattice
 
 
+import colimits
 import topos
 import subobject_classifier
 import pullbacks
@@ -16,7 +17,7 @@ noncomputable theory
 
 variables {C : Type u} [category.{v} C ]
 
-variables [topos.{v} C] [has_finite_colimits.{v} C]
+variables [topos.{v} C] 
 
 variables (X Y : C) (σ : X ⨯ Y ⟶ Ω C)
 
