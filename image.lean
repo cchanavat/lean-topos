@@ -50,7 +50,7 @@ def monic_to_fork_lift {X Y : C} (m : X ⟶ Y) [mono m]
 fork.is_limit.lift' (monic_is_limit_fork m) (fork.ι f) (fork.condition f)
 
 
-variable [has_finite_colimits C]
+variable [has_pushouts C]
 
 abbreviation cokernel {X Y : C} (f : X ⟶ Y) := pushout f f
 abbreviation cokernel.x {X Y : C} (f : X ⟶ Y) := (pushout.inl : Y ⟶ cokernel f)

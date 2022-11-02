@@ -30,35 +30,7 @@ namespace presheaf
   
   Ω in a presheaf topos is defined to be Ω_c = all the sieves on c -/
 
-def sieve_map (c d : C) (f : c ⟶ d) : sieve d ⟶ sieve c := sieve.pullback f
-
-abbreviation Ω_obj (c : Cᵒᵖ) := (sieve c.unop)
-abbreviation Ω_map (c d : Cᵒᵖ) (f : c ⟶ d) : (Ω_obj c ⟶ Ω_obj d ):= sieve_map _ _ f.unop
-
-def Ω : °C := {
-  obj := Ω_obj,
-  map := Ω_map,
-  map_id' := 
-  begin
-    intro, dunfold Ω_map sieve_map,
-    funext, simp 
-  end,
-  map_comp' := 
-  begin
-    intros X Y Z f g, dunfold Ω_map sieve_map, 
-    funext, simp [sieve.pullback_comp]
-  end,
-}
-
-@[simp] lemma obj' (c : Cᵒᵖ) : (Ω.obj c) = (Ω_obj c) := by refl
-@[simp] lemma map' {c d : Cᵒᵖ} (f : c ⟶ d) : (Ω.map f) = (Ω_map c d f) := by refl
-
-instance (c : Cᵒᵖ) : complete_lattice (Ω.obj c) := by simp; apply_instance
-
- 
-def truth : ₸ ⟶ Ω := { app := λ c x, ⊤ }
-
-@[simp] lemma truth_app (c : Cᵒᵖ) (x : ₸.obj c) : truth.app c x = ⊤ := by refl
+-- First are some results about limits in °C
 
 -- Some basics types in Type u to work with --
 def uUnit : Type u := ulift unit
@@ -74,7 +46,7 @@ end
 namespace terminal
 /- Let us prove that the terminimport tactic.simp_rwal object in Type u is iso the one element type -/
 
-lemma type_uniq (b a : ⊤_ (Type u)) : a = b := 
+lemma type_subsingleton (b a : ⊤_ (Type u)) : a = b := 
 begin
   have h : (fuBool a b : uBool ⟶ ⊤_ (Type u)) = (fuBool b a : uBool ⟶ ⊤_ (Type u)) := by 
     rw [←is_terminal.hom_ext terminal_is_terminal (terminal.from uBool) (fuBool b a), 
@@ -84,7 +56,7 @@ end
 
 instance type_unique : unique (⊤_ (Type u)) :=
 { default := (terminal.from uUnit : uUnit → (⊤_ (Type u))) uStar,
-  uniq := type_uniq _ }
+  uniq := type_subsingleton _ }
 
 /- Explicit construction of a terminal presheaf, named T -/
 def T : °C := (category_theory.functor.const (Cᵒᵖ)).obj (⊤_ (Type u))
@@ -156,10 +128,10 @@ namespace pullback
   As a consequence a natural transormation is mono iff each component are mono
 
   Notation :
-  W --v--> Y
-  |        |
-  u        t
-  |        |
+           Y
+           |
+           t
+           |
   X --s--> Z
   We show that we have an isomorphism of pullback cones, between the applied pullback cone in c
   and the canonical pullback cone from s_c and t_c. 
@@ -170,20 +142,27 @@ namespace pullback
 
 variables {X Y Z : °C} (s : X ⟶ Z) (t : Y ⟶ Z) (c : Cᵒᵖ)
 
+lemma app_cone_of_cone_comm {s : X ⟶ Z} {t : Y ⟶ Z} (w : pullback_cone s t) (c : Cᵒᵖ) :
+  w.fst.app c ≫ s.app c = w.snd.app c ≫ t.app c := 
+begin
+  rw [←nat_trans.vcomp_app, ←nat_trans.vcomp_app, nat_trans.vcomp_eq_comp, 
+      pullback_cone.condition w],
+  refl
+end
+
+def app_cone_of_cone {s : X ⟶ Z} {t : Y ⟶ Z} (w : pullback_cone s t) (c : Cᵒᵖ) := 
+  pullback_cone.mk (w.fst.app c) (w.snd.app c) (app_cone_of_cone_comm w c)
+
+
 abbreviation pullback_fst_app : (pullback s t).obj c ⟶ X.obj c := 
 (pullback.fst : pullback s t ⟶ X).app c
 abbreviation pullback_snd_app : (pullback s t).obj c ⟶ Y.obj c := 
 (pullback.snd : pullback s t ⟶ Y).app c
 
-lemma iso_app_comm : 
-  pullback_fst_app s t c ≫ s.app c = pullback_snd_app s t c ≫ t.app c :=
-begin 
-  rw [←nat_trans.vcomp_app, ←nat_trans.vcomp_app, nat_trans.vcomp_eq_comp, pullback.condition], 
-  refl
-end
 
 def app_cone : pullback_cone (s.app c) (t.app c) := 
-  pullback_cone.mk (pullback_fst_app s t c) (pullback_snd_app s t c) (iso_app_comm s t c)
+app_cone_of_cone (pullback_cone.mk pullback.fst pullback.snd pullback.condition) c
+  -- pullback_cone.mk (pullback_fst_app s t c) (pullback_snd_app s t c) (app_comm s t c)
 
 @[simp] lemma eval_obj_eq_simp (x : walking_cospan) : 
   (cospan (s.app c) (t.app c)).obj x = (cospan s t ⋙ (evaluation Cᵒᵖ (Type u)).obj c).obj x :=
@@ -264,6 +243,7 @@ end
 lemma app_cone_is_limit : is_limit (app_cone s t c) := 
 is_limit.of_iso_limit (limit_cone.is_limit _) (iso_app_cone s t c).symm
 
+variables {s t}
 -- More generally, we can get an iso of cone from a any limit cone
 lemma iso_app_cone_of_is_limit (wc : pullback_cone (s.app c) (t.app c)) (hwc : is_limit wc) : 
   app_cone s t c ≅ wc := 
@@ -271,18 +251,6 @@ begin
 exact is_limit.unique_up_to_iso (app_cone_is_limit s t c) hwc
 end
 
-lemma app_cone_of_cone_comm {s : X ⟶ Z} {t : Y ⟶ Z} (w : pullback_cone s t) (c : Cᵒᵖ) :
-  w.fst.app c ≫ s.app c = w.snd.app c ≫ t.app c := 
-begin
-  rw [←nat_trans.vcomp_app, ←nat_trans.vcomp_app, nat_trans.vcomp_eq_comp, 
-      pullback_cone.condition w],
-  refl
-end
-
-variables {s t}
-
-def app_cone_of_cone (w : pullback_cone s t) (c : Cᵒᵖ) := 
-  pullback_cone.mk (w.fst.app c) (w.snd.app c) (app_cone_of_cone_comm w c)
 
 @[simp] lemma app_cone_cano : 
   app_cone_of_cone (pullback_cone.mk pullback.fst pullback.snd pullback.condition) c = app_cone s t c := by refl
@@ -336,7 +304,7 @@ pullback_cone.ext (app_cone_iso_of_iso_cone_X w w' c i)
 
 
 -- Useful result : if a cone is limit in the presheaves world, then every applied cone is limit
-lemma is_limit_app_cone_of_cone (w : pullback_cone s t) (hw : is_limit w) (c : Cᵒᵖ) :
+theorem is_limit_app_cone_of_cone (w : pullback_cone s t) (hw : is_limit w) (c : Cᵒᵖ) :
   is_limit (app_cone_of_cone w c) :=
 begin
   have g := app_cone_iso_of_iso_cone _ w c (is_limit.unique_up_to_iso (pullback_is_pullback s t) hw),
@@ -359,6 +327,37 @@ begin
   apply pullback_cone.mono_of_is_limit_mk_id_id,
   exact pullback.is_limit_app_cone_of_cone _ (pullback_cone.is_limit_mk_id_id m) c,
 end
+
+
+def sieve_map (c d : C) (f : c ⟶ d) : sieve d ⟶ sieve c := sieve.pullback f
+
+abbreviation Ω_obj (c : Cᵒᵖ) := (sieve c.unop)
+abbreviation Ω_map (c d : Cᵒᵖ) (f : c ⟶ d) : (Ω_obj c ⟶ Ω_obj d ):= sieve_map _ _ f.unop
+
+def Ω : °C := {
+  obj := Ω_obj,
+  map := Ω_map,
+  map_id' := 
+  begin
+    intro, dunfold Ω_map sieve_map,
+    funext, simp 
+  end,
+  map_comp' := 
+  begin
+    intros X Y Z f g, dunfold Ω_map sieve_map, 
+    funext, simp [sieve.pullback_comp]
+  end,
+}
+
+@[simp] lemma obj' (c : Cᵒᵖ) : (Ω.obj c) = (Ω_obj c) := by refl
+@[simp] lemma map' {c d : Cᵒᵖ} (f : c ⟶ d) : (Ω.map f) = (Ω_map c d f) := by refl
+
+instance (c : Cᵒᵖ) : complete_lattice (Ω.obj c) := by simp; apply_instance
+
+ 
+def truth : ₸ ⟶ Ω := { app := λ c x, ⊤ }
+
+@[simp] lemma truth_app (c : Cᵒᵖ) (x : ₸.obj c) : truth.app c x = ⊤ := by refl
 
 namespace classifier
 variables {S X : °C} (m : S ⟶ X) [mono m] 
@@ -399,8 +398,7 @@ begin
   { intro h, cases h with w h, 
     ext d, simp,
     use S.map (f.op) w, rw ←h,
-    change X.map f.op (m.app c w) with (m.app c ≫ X.map f.op) w,
-    rw ←nat_trans.naturality', refl },
+    rw [functor_to_types.naturality], refl },
   { intro h, rw sieve.ext_iff  at h, simp at h,
     specialize h (𝟙 c.unop), cases h with w h,
     change c with opposite.op (opposite.unop c),
@@ -469,20 +467,18 @@ def pb_lift_naturality (u : pullback_cone (χ m) truth) (c d : Cᵒᵖ) (f : c �
   u.X.map f ≫ app.pb_lift m u d = app.pb_lift m u c ≫ S.map f :=
 begin
   symmetry,
-  rw [←cancel_mono (m.app d), assoc, nat_trans.naturality, ←assoc, pb_lift_fst_comm, 
+  rw [←cancel_mono (m.app d), assoc, nat_trans.naturality, ←assoc,  pb_lift_fst_comm,
       ←nat_trans.naturality, ←pb_lift_fst_comm, assoc],  
 end
 
 -- For the converse, to pick an object from S, we use the pullback condition
 -- on the terminal object
-lemma subtype_iff_pb (σ : X ⟶ Ω ) (classifies : classifying_pullback truth m σ) (y : X.obj c) : 
+lemma subtype_iff_pb (σ : X ⟶ Ω) (classifies : classifying_pullback truth m σ) (y : X.obj c) : 
   (∃ x : S.obj c, m.app c x = y) ↔ σ.app c y = ⊤ :=
 begin
     split,
   { intro h, cases h with w h, 
-    rw ←h, 
-    have g := classifies.comm,
-    rw [←types_comp_apply (m.app c) (σ.app c), ←nat_trans.comp_app, classifies.comm],
+    rw [←h, ←types_comp_apply (m.app c) (σ.app c), ←nat_trans.comp_app, classifies.comm],
     refl },
   { intro h, rw sieve.ext_iff at h, 
     have comm : terminal.tto_app X c y ≫ σ.app c = (𝟙 _) ≫ truth.app c := by { ext, exact h f },
@@ -528,7 +524,7 @@ def uniquely (σ : X ⟶ Ω ) (h : classifying truth m σ) (y : X.obj c) : σ.ap
 begin
   apply sieve.ext,
   intros d f,
-  rw [in_sieve_iff_exists m σ h y, subtype_iff, ←in_sieve_iff_top]
+  rw [in_sieve_iff_exists m σ h y, subtype_iff, ←in_sieve_iff_top],
 end
 
 end app

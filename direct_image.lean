@@ -15,7 +15,7 @@ Definitions and properties of direct image of a monic
 Beck-Chevalley conditions
 
 Only the first definition and the last theorems are not auxiliary junk
-src : Sheaves, IV.3 
+References : [MM92, IV.3] 
 -/
 
 universes v u
@@ -54,7 +54,7 @@ lemma mono_of_pullback (s : pullback_cone g k) (is_lim : is_limit s) : mono s.fs
 -- The instance mono s.fst should be infered from 
 -- pullback.fst_of_mono but is not
 
--- We follow Sheaves IV.3.2, with mostly their notations
+-- We follow [MM92, IV.3.2], with mostly their notations
 variables (s : pullback_cone g k) 
 
 def upper_right_rectangle (k : b' ⟶ b) [mono k] : pullback_cone (uncurried k) (truth C) :=

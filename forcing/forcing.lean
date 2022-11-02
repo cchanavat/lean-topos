@@ -3,7 +3,7 @@ import category_theory.category.basic
 import topos
 import subobject_classifier
 import presheaf
-import semantics
+import forcing.semantics
 
 open category_theory category_theory.category category_theory.limits classifier 
 

@@ -2,13 +2,10 @@ import category_theory.limits.shapes.finite_limits
 import category_theory.closed.cartesian
 import category_theory.subobject.basic
 import category_theory.subobject.lattice
-
 import order.heyting.basic
 
+import colimits
 import topos
-import subobject_classifier
-import pullbacks
-import image
 import presheaf
 
 open category_theory category_theory.category category_theory.limits classifier
@@ -19,7 +16,7 @@ noncomputable theory
 
 variables (C : Type u) [category.{v} C ]
 
-variables [topos.{v} C] [has_finite_colimits.{v} C]
+variables [topos.{v} C] 
 
 
 /- We now define the arrow for the Heyting structure on the suboject of Ω, 
@@ -60,7 +57,7 @@ def or_arrow : ΩxΩ C ⟶ Ω C := classifier_of (or_facto C).m
 def neg_arrow : Ω C ⟶ Ω C := (prod.lift (𝟙 (Ω C)) (terminal.from (Ω C) ≫ bot_arrow C)) ≫ imp_arrow C
 
 /- The equality -/
-def δ (Y : C) : Y ⨯ Y ⟶ Ω C := classifier_of (diag Y) 
+-- def δ (Y : C) : Y ⨯ Y ⟶ Ω C := classifier_of (diag Y) 
 
 
 /- Now we interpret inductively any 1st order formula using the above arrow -/

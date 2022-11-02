@@ -5,9 +5,6 @@ import category_theory.subobject.lattice
 
 import colimits
 import topos
-import subobject_classifier
-import pullbacks
-import image
 
 open category_theory category_theory.category category_theory.limits category_theory.limits.prod classifier 
 
