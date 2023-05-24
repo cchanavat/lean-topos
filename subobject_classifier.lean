@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2022 Mathieu Chanavat. All rights reserved.
+Copyright (c) 2022 Clémence Chanavat. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mathieu Chanavat
+Authors: Clémence Chanavat
 -/
 import category_theory.limits.shapes.finite_limits
 import category_theory.closed.cartesian
